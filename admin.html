@@ -1,0 +1,26 @@
+<!doctype html>
+<html lang="pt-BR"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Painel | Mr.King</title><link rel="stylesheet" href="admin.css">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script><script src="config.js"></script></head>
+<body>
+<header><a href="index.html">← Ver site</a><b>MR.KING <span>Painel online</span></b><button id="logoutBtn" hidden>Sair</button></header>
+<div id="login" class="gate"><div class="login-box"><p>MR.KING • ADMIN</p><h1>Painel da loja.</h1><small>Entre com o e-mail e senha do administrador.</small>
+<form id="loginForm"><input id="email" type="email" placeholder="Seu e-mail" required><input id="password" type="password" placeholder="Senha" required><button class="primary">Entrar</button><div id="loginError"></div></form>
+<div id="setupNotice" class="notice" hidden>Configure primeiro o <b>config.js</b> com o endereço e a chave pública do Supabase.</div></div></div>
+<main id="app" hidden>
+<section class="intro"><div><p>PAINEL DA LOJA</p><h1>Comande tudo daqui.</h1><small>Produtos, estoque básico e interessados — tudo online.</small></div><button id="exportBtn">Exportar backup</button></section>
+<div id="status" class="status"></div>
+<section class="layout"><form id="postForm" class="panel"><h2 id="formTitle">Novo produto</h2><input type="hidden" id="postId">
+<label>Título<input id="title" required placeholder="Ex.: Camiseta Oversized Lisa"></label>
+<label>Descrição<textarea id="description" placeholder="Ex.: Malha confortável..."></textarea></label>
+<div class="row"><label>Preço<input id="price" placeholder="R$ 49,90"></label><label>Tamanhos<input id="sizes" placeholder="G1, G2... GG10"></label></div>
+<label>Categoria<select id="category"><option>Camisetas</option><option>Bermudas</option><option>Regatas</option><option>Moletom</option><option>Kits</option><option>Outros</option></select></label>
+<label class="check"><input id="tryOn" type="checkbox" checked> Ativar “Experimentar em mim”</label>
+<label class="check"><input id="published" type="checkbox" checked> Publicado no site</label>
+<label>Foto do produto<input id="image" type="file" accept="image/jpeg,image/png,image/webp"></label><img id="preview" class="preview" hidden>
+<div class="actions"><button class="primary" type="submit">Salvar produto</button><button id="cancel" type="button" hidden>Cancelar</button></div></form>
+<section class="panel"><div class="listHead"><h2>Produtos</h2><span id="count"></span></div><div id="posts"></div></section></section>
+<section class="panel leads"><div class="listHead"><h2>Interessados recentes</h2><button id="refreshLeads">Atualizar</button></div><div id="leads"></div></section>
+<section class="panel instructions"><h2>Primeira configuração</h2><ol><li>Crie seu usuário no Supabase Authentication.</li><li>Rode o arquivo <b>supabase-schema.sql</b> no SQL Editor.</li><li>Preencha <b>config.js</b> com URL e chave pública.</li><li>Publique no Cloudflare Pages.</li></ol><p>Nunca coloque FAL_KEY, service_role key ou outras chaves secretas no navegador.</p></section>
+</main>
+<script src="admin.js"></script></body></html>
