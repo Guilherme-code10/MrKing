@@ -2,3 +2,6 @@
 .check{display:flex!important;align-items:center;gap:8px;color:#d9ff35!important}.check input{width:auto!important;margin:0!important}
 .gate{min-height:calc(100vh - 68px);display:grid;place-items:center;padding:30px}.login-box{width:min(430px,92vw);border:1px solid #292929;background:#121212;padding:35px}.login-box>p{color:#d9ff35;font-size:10px;letter-spacing:2px;font-weight:900}.login-box h1{font-size:40px;margin:8px 0}.login-box small{color:#888}.login-box form{margin-top:25px;display:grid;gap:10px}.login-box input{background:#090909;border:1px solid #333;color:#fff;padding:13px;border-radius:3px}.login-box button{margin-top:5px}.login-box #loginError{color:#ff8b8b;font-size:10px;min-height:15px}.notice{margin-top:20px;padding:12px;background:#201c09;color:#d9ff35;font-size:10px;line-height:1.6}.leads{margin:22px 6vw}.lead{display:grid;grid-template-columns:1fr 1fr auto;gap:15px;padding:13px 0;border-top:1px solid #292929;font-size:11px;align-items:center}.lead span{color:#d9ff35}.lead small{color:#777}.instructions{margin-bottom:50px}.instructions p{color:#d9ff35}
 @media(max-width:700px){.lead{grid-template-columns:1fr;gap:5px}.lead small{font-size:8px}}
+[hidden] {
+  display: none !important;
+}
