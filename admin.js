@@ -12,7 +12,7 @@ async function boot(){
  const {data:{session}}=await sb.auth.getSession(); if(session) enter(session.user);
  sb.auth.onAuthStateChange((_e,s)=>s?enter(s.user):leave());
 }
-async function enter(user){currentUser=user; $("login").hidden=true;$("app").hidden=false;$("logoutBtn").hidden=false;await render();await loadLeads()}
+async function enter(user){currentUser=user; $("login").hidden=true;$("app").hidden=false;$("logoutBtn").hidden=false;await render();await loadLeads();await loadTryonRequests()}
 function leave(){currentUser=null;$("login").hidden=false;$("app").hidden=true;$("logoutBtn").hidden=true}
 $("loginForm").onsubmit=async e=>{e.preventDefault();if(!sb){$("loginError").textContent="Supabase não configurado.";return} const {error}=await sb.auth.signInWithPassword({email:$("email").value,password:$("password").value});$("loginError").textContent=error?error.message:""}
 $("logoutBtn").onclick=()=>sb?.auth.signOut();
@@ -32,5 +32,125 @@ $("postForm").onsubmit=async e=>{e.preventDefault();let image=imageUrl;const f=$
 $("cancel").onclick=reset;
 $("refreshLeads").onclick=loadLeads;
 async function loadLeads(){if(!sb||!currentUser)return;const {data,error}=await sb.from("leads").select("*").order("created_at",{ascending:false}).limit(30);if(error){$("leads").innerHTML='<div class="empty">Não foi possível carregar interessados.</div>';return}$("leads").innerHTML=data?.length?data.map(x=>`<div class="lead"><b>${esc(x.product_title||"Produto")}</b><span>${esc(x.whatsapp||"WhatsApp não informado")}</span><small>${esc(x.event_type)} • ${new Date(x.created_at).toLocaleString("pt-BR")}</small></div>`).join(""):'<div class="empty">Ainda não há interessados.</div>'}
+
+$("refreshTryonRequests").onclick=loadTryonRequests;
+
+async function loadTryonRequests(){
+ if(!sb||!currentUser)return;
+
+ const box=$("tryonRequests");
+ const count=$("tryonRequestCount");
+
+ box.innerHTML='<div class="empty">Carregando solicitações...</div>';
+
+ const {data,error}=await sb
+   .from("tryon_requests")
+   .select("*")
+   .order("created_at",{ascending:false})
+   .limit(50);
+
+ if(error){
+   console.error("Erro ao carregar provador:",error);
+   box.innerHTML='<div class="empty">Não foi possível carregar as solicitações.</div>';
+   return;
+ }
+
+ count.textContent=(data||[]).length+" solicitação(ões)";
+
+ if(!data?.length){
+   box.innerHTML='<div class="empty">Nenhuma solicitação do provador ainda.</div>';
+   return;
+ }
+
+ const rows=await Promise.all(data.map(async x=>{
+   const signed=await sb.storage
+     .from("tryon-photos")
+     .createSignedUrl(x.photo_path,3600);
+
+   const photoUrl=signed.data?.signedUrl||"";
+   const digits=String(x.whatsapp||"").replace(/\D/g,"");
+   const waNumber=digits.startsWith("55")?digits:"55"+digits;
+
+   const status=
+     x.status==="done"
+       ?"Concluído"
+       :x.status==="processing"
+         ?"Em andamento"
+         :"Pendente";
+
+   return `
+     <article class="post tryon-request">
+       <div>
+         ${
+           photoUrl
+             ? `<a href="${esc(photoUrl)}" target="_blank" rel="noopener">
+                  <img src="${esc(photoUrl)}" alt="Foto enviada pelo cliente">
+                </a>`
+             : ""
+         }
+       </div>
+
+       <div>
+         <h3>${esc(x.product_title||"Peça não informada")}</h3>
+         <p><b>WhatsApp:</b> ${esc(x.whatsapp||"Não informado")}</p>
+         <small>
+           ${status} •
+           ${new Date(x.created_at).toLocaleString("pt-BR")}
+         </small>
+       </div>
+
+       <div class="postBtns">
+         ${
+           waNumber
+             ? `<a
+                  class="button"
+                  href="https://wa.me/${waNumber}?text=${encodeURIComponent(
+                    "Olá! Aqui é da Mr.King. Recebemos sua solicitação do provador virtual para "+(x.product_title||"a peça escolhida")+"."
+                  )}"
+                  target="_blank"
+                  rel="noopener"
+                >WhatsApp</a>`
+             : ""
+         }
+
+         ${
+           photoUrl
+             ? `<a class="button" href="${esc(photoUrl)}" target="_blank" rel="noopener">Ver foto</a>`
+             : ""
+         }
+
+         ${
+           x.status!=="done"
+             ? `<button onclick="setTryonStatus('${x.id}','done')">Concluir</button>`
+             : `<button onclick="setTryonStatus('${x.id}','pending')">Reabrir</button>`
+         }
+       </div>
+     </article>
+   `;
+ }));
+
+ box.innerHTML=rows.join("");
+}
+
+window.setTryonStatus=async(id,status)=>{
+ if(!sb||!currentUser)return;
+
+ const {error}=await sb
+   .from("tryon_requests")
+   .update({
+     status,
+     updated_at:new Date().toISOString()
+   })
+   .eq("id",id);
+
+ if(error){
+   show("Erro ao atualizar solicitação: "+error.message);
+   return;
+ }
+
+ show(status==="done"?"Solicitação concluída.":"Solicitação reaberta.");
+ await loadTryonRequests();
+};
+
 $("exportBtn").onclick=async()=>{const {data}=await sb.from("products").select("*").order("created_at",{ascending:false});const blob=new Blob([JSON.stringify(data||[],null,2)],{type:"application/json"});const a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download="mrking-produtos-backup.json";a.click();URL.revokeObjectURL(a.href)}
 boot();

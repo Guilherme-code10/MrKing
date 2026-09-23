@@ -444,7 +444,7 @@
         <div class="tryon-head">
           <p class="kicker">MR.KING AI</p>
           <h3>Experimente a peça<br /><em>em você.</em></h3>
-          <p>Envie uma foto sua e veja uma simulação usando esta roupa.</p>
+          <p>Envie uma foto sua e receba seu provador personalizado pelo WhatsApp em até 24 horas.</p>
         </div>
         <div class="tryon-layout">
           <div class="garment-preview">
@@ -473,28 +473,38 @@
               hidden
               alt="Sua foto"
             />
+
+            <div id="photoActions" class="photo-actions" hidden>
+              <label for="personPhoto" class="button outline">
+                🔄 Trocar foto
+              </label>
+              <button id="removePersonPhoto" class="button outline" type="button">
+                🗑 Remover foto
+              </button>
+            </div>
           </div>
         </div>
         <div class="tryon-footer">
           <div>
             <label class="tryon-phone-label"
-              >WhatsApp (opcional)<input
+              >WhatsApp para receber o resultado<input
                 id="tryonWhatsapp"
                 type="tel"
-                placeholder="(11) 99999-9999" /></label
-            ><small>🔒 A foto é usada somente para gerar a simulação.</small
+                placeholder="(11) 99999-9999"
+                required /></label
+            ><small>🔒 Sua foto será usada somente para preparar seu provador.</small
             ><small
               >Resultado ilustrativo — não substitui a prova física.</small
             >
           </div>
           <button id="generateTryon" class="button bright" disabled>
-            ✨ Gerar meu look
+            ✨ Solicitar meu provador
           </button>
         </div>
         <div id="tryonLoading" class="tryon-loading" hidden>
           <div class="spinner"></div>
-          <b>Preparando seu look...</b
-          ><span>A IA está ajustando a peça ao seu corpo.</span>
+          <b>Enviando sua solicitação...</b
+          ><span>Estamos enviando sua foto com segurança.</span>
         </div>
         <div id="tryonResult" class="tryon-result" hidden>
           <div>
@@ -594,76 +604,140 @@
           if (!f) return;
           personPreview.src = await fileData(f, 900);
           personPreview.hidden = false;
+
+          const photoActions = document.getElementById("photoActions");
+          if (photoActions) photoActions.hidden = false;
+
           generate.disabled = false;
         };
+
+        document.getElementById("removePersonPhoto").onclick = () => {
+          person.value = "";
+          personPreview.src = "";
+          personPreview.hidden = true;
+
+          const photoActions = document.getElementById("photoActions");
+          if (photoActions) photoActions.hidden = true;
+
+          generate.disabled = true;
+          error.hidden = true;
+        };
         generate.onclick = async () => {
-          if (!person.files[0]) return;
+          const photo = person.files[0];
+          const phone =
+            document.getElementById("tryonWhatsapp")?.value.trim() || "";
+
+          error.hidden = true;
+          result.hidden = true;
+
+          if (!photo) {
+            error.textContent = "Escolha uma foto para continuar.";
+            error.hidden = false;
+            return;
+          }
+
+          if (!phone) {
+            error.textContent =
+              "Informe seu WhatsApp para receber o resultado.";
+            error.hidden = false;
+            return;
+          }
+
+          if (
+            !window.MRKING_CONFIG?.SUPABASE_URL ||
+            !window.MRKING_CONFIG?.SUPABASE_ANON_KEY ||
+            !window.supabase
+          ) {
+            error.textContent =
+              "Serviço temporariamente indisponível. Tente novamente.";
+            error.hidden = false;
+            return;
+          }
 
           loading.hidden = false;
-          result.hidden = true;
-          error.hidden = true;
           generate.disabled = true;
 
+          let uploadedPath = "";
+
           try {
-            const generated = await TryOnService.generate({
-              personFile: person.files[0],
-              garmentUrl: garmentUrl,
-              productName: garmentName
-            });
+            const c = window.supabase.createClient(
+              window.MRKING_CONFIG.SUPABASE_URL,
+              window.MRKING_CONFIG.SUPABASE_ANON_KEY,
+            );
 
-            resultImage.src = generated.imageUrl;
-            result.hidden = false;
-            loading.hidden = true;
+            const ext =
+              photo.type === "image/png"
+                ? "png"
+                : photo.type === "image/webp"
+                  ? "webp"
+                  : "jpg";
 
-            const phone =
-              document.getElementById("tryonWhatsapp")?.value.trim() || "";
+            uploadedPath =
+              "requests/" + crypto.randomUUID() + "." + ext;
 
-            if (
-              window.MRKING_CONFIG?.SUPABASE_URL &&
-              window.MRKING_CONFIG?.SUPABASE_ANON_KEY &&
-              window.supabase
-            ) {
-              const c = window.supabase.createClient(
-                window.MRKING_CONFIG.SUPABASE_URL,
-                window.MRKING_CONFIG.SUPABASE_ANON_KEY,
-              );
-
-              c.from("site_events").insert({
-                event_type: "tryon_generated",
-                product_id: productId || null,
-                product_title: garmentName,
-                metadata: {
-                  whatsapp: phone || null,
-                  mode: "browser_canvas",
-                },
+            const { error: uploadError } = await c.storage
+              .from("tryon-photos")
+              .upload(uploadedPath, photo, {
+                upsert: false,
+                contentType: photo.type || "image/jpeg",
               });
 
-              if (phone) {
-                c.from("leads").insert({
-                  whatsapp: phone,
-                  product_id: productId || null,
-                  product_title: garmentName,
-                  event_type: "tryon_interest",
-                  metadata: {
-                    source: "virtual_try_on_free",
-                  },
-                });
-              }
+            if (uploadError) throw uploadError;
+
+            const { error: requestError } = await c
+              .from("tryon_requests")
+              .insert({
+                product_id: productId || null,
+                product_title: garmentName,
+                whatsapp: phone,
+                photo_path: uploadedPath,
+                status: "pending",
+              });
+
+            if (requestError) {
+              await c.storage
+                .from("tryon-photos")
+                .remove([uploadedPath]);
+
+              throw requestError;
             }
 
-            wa.href =
-              "https://wa.me/5511996893306?text=" +
-              encodeURIComponent(
-                "Olá! Gostei da " +
-                  garmentName +
-                  " que experimentei no provador virtual. " +
-                  "Quero saber os tamanhos disponíveis.",
-              );
+            loading.hidden = true;
+
+            result.innerHTML = `
+              <div>
+                <p class="kicker">SOLICITAÇÃO RECEBIDA</p>
+                <h4>Seu provador está na fila.</h4>
+                <p>
+                  Vamos preparar seu look e enviar o resultado
+                  pelo WhatsApp informado em até 24 horas.
+                </p>
+                <button
+                  type="button"
+                  class="button bright"
+                  data-tryon-finish
+                >
+                  Entendi ✓
+                </button>
+              </div>
+            `;
+
+            result.hidden = false;
+
+            result
+              .querySelector("[data-tryon-finish]")
+              ?.addEventListener("click", () => {
+                modal.classList.remove("open");
+                modal.setAttribute("aria-hidden", "true");
+              });
+
+            person.value = "";
+            personPreview.hidden = true;
           } catch (e) {
-            console.error("Erro no provador:", e);
+            console.error("Erro ao enviar solicitação:", e);
 
             error.textContent =
-              "Não foi possível montar o look. Tente outra foto.";
+              "Não foi possível enviar sua solicitação. Tente novamente.";
 
             error.hidden = false;
           } finally {
