@@ -29,7 +29,7 @@ create policy "admin read tryon requests"
 on public.tryon_requests
 for select
 to authenticated
-using (true);
+using (public.is_admin());
 
 drop policy if exists "admin update tryon requests"
 on public.tryon_requests;
@@ -38,8 +38,8 @@ create policy "admin update tryon requests"
 on public.tryon_requests
 for update
 to authenticated
-using (true)
-with check (true);
+using (public.is_admin())
+with check (public.is_admin());
 
 -- Bucket PRIVADO para fotos enviadas pelos clientes.
 insert into storage.buckets (id, name, public)
@@ -64,7 +64,7 @@ create policy "admin read tryon photos"
 on storage.objects
 for select
 to authenticated
-using (bucket_id = 'tryon-photos');
+using (bucket_id = 'tryon-photos' and public.is_admin());
 
 -- Somente usuário autenticado pode excluir.
 drop policy if exists "admin delete tryon photos"
