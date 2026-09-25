@@ -1,38 +1,77 @@
-# Mr.King V6 — Site online
+# 👑 Mr.King — Moda de Gente Grande
 
-Esta versão mantém o design do V5 e troca o painel `localStorage` por **Supabase**.
+Site desenvolvido para a **Mr.King**, loja de moda masculina plus size, com catálogo online, integração com WhatsApp, painel administrativo e recursos de provador virtual.
 
-## Arquitetura
+## 🚀 Recursos
 
-- Frontend: HTML/CSS/JS, pronto para Cloudflare Pages.
-- Banco e autenticação: Supabase.
-- Fotos dos produtos: Supabase Storage.
-- Provador: função `functions/api/tryon.js`, com `FAL_KEY` somente no servidor.
-- Leads: tabela `leads`.
-- Eventos: tabela `site_events`.
+- Catálogo de produtos online
+- Integração com WhatsApp
+- Painel administrativo com autenticação
+- Cadastro, edição e exclusão de produtos
+- Upload de imagens para o Supabase Storage
+- Controle de produtos publicados
+- Registro de leads e eventos do site
+- Solicitações de provador virtual
+- Upload privado da foto do cliente
+- Acompanhamento das solicitações pelo painel
+- Layout responsivo
 
-## Configuração do Supabase
+## 🛠️ Tecnologias
 
-1. Crie um projeto no Supabase.
-2. Em Authentication > Providers, habilite Email.
-3. Crie o usuário administrador e, se possível, desative o cadastro público.
-4. Abra SQL Editor e execute `supabase-schema.sql`.
-5. Em Project Settings > API, copie a **Project URL** e a chave **anon/public**.
-6. Cole essas duas informações em `config.js`.
-7. Nunca coloque `service_role` ou `FAL_KEY` em `config.js`.
+- HTML5
+- CSS3
+- JavaScript
+- Supabase
+  - Database
+  - Authentication
+  - Storage
+  - Row Level Security (RLS)
+- Git e GitHub
+- Cloudflare Pages
 
-## Publicação
+## 🧱 Arquitetura atual
 
-O projeto pode ser publicado no Cloudflare Pages como site estático. Não é necessário manter o computador ligado.
+O frontend é composto por HTML, CSS e JavaScript e pode ser publicado como site estático.
 
-## Provador
+O Supabase é utilizado para:
 
-A função `functions/api/tryon.js` espera `FAL_KEY` como variável secreta no ambiente do Cloudflare. O navegador não recebe essa chave.
+- armazenar os produtos;
+- autenticar o usuário do painel;
+- armazenar imagens dos produtos;
+- registrar leads e eventos;
+- armazenar solicitações do provador;
+- manter as fotos enviadas pelos clientes em bucket privado.
 
-## Importante sobre o modelo de IA
+### Provador
 
-O provador V5 foi preparado para um serviço externo de Virtual Try-On. A implementação local CatVTON usada apenas para testes não faz parte da arquitetura comercial final.
+Na versão atual, o cliente seleciona uma peça, envia uma foto e informa o WhatsApp. A solicitação é registrada no Supabase para atendimento pelo painel administrativo.
 
-## Dados e privacidade
+Os arquivos `provador.js` e `tryon-service.js` também mantêm uma implementação de demonstração no navegador. O repositório atual **não possui** uma função `functions/api/tryon.js` nem depende de `FAL_KEY` para o fluxo publicado.
 
-O site registra eventos básicos e, quando o cliente informa o WhatsApp após usar o provador, registra um lead. A loja deve publicar uma política de privacidade adequada antes do uso em produção.
+## 🗄️ Banco de dados
+
+Os arquivos SQL do projeto são:
+
+- `supabase-schema.sql` — produtos, leads, eventos e Storage dos produtos;
+- `tryon-requests.sql` — solicitações do provador e bucket privado para fotos dos clientes.
+
+## 🔐 Segurança
+
+A chave presente em `config.js` é a chave pública/publishable do Supabase e é utilizada pelo navegador. Chaves secretas, como `service_role`, nunca devem ser colocadas no frontend.
+
+As políticas RLS devem ser revisadas antes de uso em produção. Em especial, permissões administrativas não devem ser concedidas genericamente a qualquer usuário autenticado.
+
+## 🌐 Publicação
+
+O frontend pode ser hospedado no Cloudflare Pages ou em outro serviço de hospedagem estática.
+
+## ⚠️ Privacidade
+
+O projeto pode armazenar WhatsApp e fotos enviadas pelos clientes. Antes do uso em produção, é importante disponibilizar uma política de privacidade adequada e definir regras de retenção e exclusão desses dados.
+
+## 👨‍💻 Autor
+
+**Guilherme Augusto Morais**
+
+- GitHub: https://github.com/Guilherme-code10
+- LinkedIn: https://www.linkedin.com/in/guilherme-augusto-morais/
