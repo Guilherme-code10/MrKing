@@ -56,7 +56,7 @@ for insert
 to anon, authenticated
 with check (bucket_id = 'tryon-photos');
 
--- Somente usuário autenticado pode visualizar.
+-- Somente administradores podem visualizar.
 drop policy if exists "admin read tryon photos"
 on storage.objects;
 
@@ -66,7 +66,7 @@ for select
 to authenticated
 using (bucket_id = 'tryon-photos' and public.is_admin());
 
--- Somente usuário autenticado pode excluir.
+-- Somente administradores podem excluir.
 drop policy if exists "admin delete tryon photos"
 on storage.objects;
 
@@ -74,4 +74,4 @@ create policy "admin delete tryon photos"
 on storage.objects
 for delete
 to authenticated
-using (bucket_id = 'tryon-photos');
+using (bucket_id = 'tryon-photos' and public.is_admin());
