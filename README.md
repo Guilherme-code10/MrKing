@@ -59,7 +59,9 @@ Os arquivos SQL do projeto são:
 
 A chave presente em `config.js` é a chave pública/publishable do Supabase e é utilizada pelo navegador. Chaves secretas, como `service_role`, nunca devem ser colocadas no frontend.
 
-As políticas RLS devem ser revisadas antes de uso em produção. Em especial, permissões administrativas não devem ser concedidas genericamente a qualquer usuário autenticado.
+As políticas RLS usam a tabela `admin_users` e a função `is_admin()` para separar usuários autenticados comuns de administradores.
+
+Após criar o usuário administrador no Supabase Authentication, cadastre o UID dele na tabela `admin_users` pelo SQL Editor. O UID do administrador não deve ser colocado no código do frontend.
 
 ## 🌐 Publicação
 
